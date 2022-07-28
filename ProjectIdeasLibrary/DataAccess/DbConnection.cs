@@ -2,7 +2,7 @@
 using MongoDB.Driver;
 
 namespace ProjectIdeasLibrary.DataAccess;
-public class DbConnection
+public class DbConnection : IDbConnection
 {
     private readonly IConfiguration _config;
     private readonly IMongoDatabase _db;

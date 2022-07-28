@@ -14,5 +14,5 @@ public class IdeaModel
     public HashSet<string> Stars { get; set; } = new();
     public List<string> Comments { get; set; } = new();
     public BasicUserModel Owner { get; set; }
-    public bool ActiveStatus { get; set; } = false;
+    public bool Active { get; set; } = true;
 }
