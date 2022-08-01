@@ -8,5 +8,6 @@ Planned features:
 - Commenting & Upvoting on ideas
 
 References:
+
 Tim Corey's Suggestion Site App -tutorial.
 https://www.youtube.com/playlist?list=PLLWMQd6PeGY0cZFMqx5ijmdaD87sJKCsU
