@@ -1,0 +1,87 @@
+﻿@page "/Ideas/{Id}"
+@inject IIdeaData ideaData;
+@inject ICommentData commentData;
+@inject NavigationManager navManager;
+
+@inject IUserData userData;
+
+<h1>Idea details</h1>
+
+<div>
+    <div>
+        @if (idea is not null)
+        {
+            <div>
+                <div>
+                    <div>
+                        <div>@idea.Title</div>
+                        <div>@idea.DateCreated.ToString("d")</div>
+                        <div>@idea.Owner.UserName</div>
+                        <div>@idea.Status.Name</div>
+                    </div>
+                    <div>
+                        <div>@idea.Stars.Count</div>
+                    </div>
+                </div>
+                <div>
+                    <div>@idea.DescLong</div>
+                </div>
+                <div>
+                    @foreach (var comment in comments)
+                    {
+                        <div>
+                            <div>
+                                <div>@comment.Creator.UserName</div>
+                            </div>
+                            <div>
+                                <div>@comment.Text</div>
+                            </div>
+                            <div>
+                                <div>@comment.DateCreated</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div>
+                    <button @onclick="(() => SampleComment())">Laita kommentti</button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Id { get; set; }
+
+    private IdeaModel idea;
+    private List<CommentModel> comments;
+
+    protected async override Task OnInitializedAsync()
+    {
+        idea = await ideaData.GetIdea(Id);
+        comments = await commentData.GetIdeaComments(idea.Id);
+    }
+
+    private void ClosePage()
+    {
+        navManager.NavigateTo("/");
+    }
+
+    // VÄLIAIKAINEN
+    private async void SampleComment()
+    {
+        var foundUser = await userData.GetUserFromAuthentication("abc-123");
+
+        CommentModel comment = new()
+            {
+                Text = "This is a comment.",
+                Creator = new BasicUserModel(foundUser),
+                Idea = new BasicIdeaModel(idea)
+            };
+        await commentData.CreateComment(comment);
+        await ideaData.CommentIdea(idea.Id, comment);
+        comments = await commentData.GetIdeaComments(idea.Id);
+        StateHasChanged();
+    }
+}

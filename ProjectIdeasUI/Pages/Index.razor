@@ -1,7 +1,164 @@
 ﻿@page "/"
 
-<PageTitle>Index</PageTitle>
+@inject IStatusData statusData;
+@inject IIdeaData ideaData;
+@inject IUserData userData;
+@inject NavigationManager navManager;
+@inject ProtectedSessionStorage sessionStorage;
 
-<h1>Hello, world!!</h1>
+<h1>Project Ideas</h1>
+<div>
+    <button>Submit idea</button>
+</div>
 
-Welcome to your new app.
+<div>
+    <div>@ideas?.Count Ideas</div>
+    <div>
+        <button @onclick="(() => OrderByNew(true))">New</button>
+        <button @onclick="(() => OrderByNew(false))">Popular</button>
+    </div>
+    <div>
+        <input 
+            type="text"
+            placeholder="Search..."
+            aria-label="Search box"
+            @oninput="((text) => OnSearchInput((string)text.Value))"
+        />
+    </div>
+</div>
+
+<div>
+    <div>
+        @if (ideas is not null)
+        {
+            // Hallitse ideoiden määrän lataamista
+            <Virtualize Items="@ideas" Context="i" OverscanCount="5">
+                <div>
+                    <div>
+                        <div @onclick="(() => OpenIdeaDetails(i))">
+                            @i.Title
+                        </div>
+                        <div @onclick="(() => OpenIdeaDetails(i))">
+                            @i.DescShort
+                        </div>
+                    </div>
+                    <div>
+                        <div>
+                            @i.Status?.Name
+                        </div>
+                        <div>
+                            <div>
+                                Stars: @i.Stars.Count
+                            </div>
+                            <div>
+                                Comments: @i.Comments.Count
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Virtualize>
+        }
+    </div>
+</div>
+
+@code {
+    private List<IdeaModel> ideas;
+    private List<StatusModel> statuses;
+
+    private string selectedStatus = "All";
+    private string searchText = "";
+    bool isSortedByNew = true;
+
+    protected async override Task OnInitializedAsync()
+    {
+        statuses = await statusData.GetAllStatuses();
+    }
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadFilterState();
+            await FilterIdeas();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadFilterState()
+    {
+        var stringResults = await sessionStorage.GetAsync<string>(nameof(selectedStatus));
+        selectedStatus = stringResults.Success ? stringResults.Value : "All";
+
+        stringResults = await sessionStorage.GetAsync<string>(nameof(searchText));
+        searchText = stringResults.Success ? stringResults.Value : "";
+
+        var boolResults = await sessionStorage.GetAsync<bool>(nameof(isSortedByNew));
+        isSortedByNew = boolResults.Success ? boolResults.Value : true;
+    }
+
+    private async Task SaveFilterState()
+    {
+        await sessionStorage.SetAsync(nameof(selectedStatus), selectedStatus);
+        await sessionStorage.SetAsync(nameof(searchText), searchText);
+        await sessionStorage.SetAsync(nameof(isSortedByNew), isSortedByNew);
+    }
+
+    private async Task FilterIdeas()
+    {
+        var output = await ideaData.GetAllActiveIdeas();
+
+        if (selectedStatus != "All")
+        {
+            output = output.Where(i => i.Status?.Name == selectedStatus).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            output = output.Where(
+                i => i.Title.Contains(searchText, StringComparison.InvariantCultureIgnoreCase) ||
+                i.DescShort.Contains(searchText, StringComparison.InvariantCultureIgnoreCase)
+            ).ToList();
+        }
+
+        if (isSortedByNew)
+        {
+            output = output.OrderByDescending(i => i.DateCreated).ToList();
+        }
+        else
+        {
+            output = output.OrderByDescending(i => i.Stars.Count).ThenByDescending(i => i.DateCreated).ToList();
+        }
+
+        ideas = output;
+
+        await SaveFilterState();
+    }
+
+    private async Task OrderByNew(bool isNew)
+    {
+        isSortedByNew = isNew;
+        await FilterIdeas();
+    }
+
+    private async Task OnSearchInput(string searchInput)
+    {
+        searchText = searchInput;
+        await FilterIdeas();
+    }
+
+    private async Task OnStatusClick(string status = "All")
+    {
+        selectedStatus = status;
+        await FilterIdeas();
+    }
+
+    //private string GetStarStatus(UserModel user)
+    //{
+
+    //}
+
+    private void OpenIdeaDetails(IdeaModel idea)
+    {
+        navManager.NavigateTo($"/Ideas/{idea.Id}");
+    }
+}

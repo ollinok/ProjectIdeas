@@ -9,4 +9,5 @@ public class UserModel
     public string EmailAddress { get; set; }
     public List<BasicIdeaModel> OwnedIdeas { get; set; } = new();
     public List<BasicIdeaModel> StarredIdeas { get; set; } = new();
+    public List<BasicCommentModel> CommentedIdeas { get; set; } = new();
 }

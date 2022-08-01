@@ -102,6 +102,39 @@ public class MongoIdeaData : IIdeaData
         }
     }
 
+    public async Task CommentIdea(string ideaId, CommentModel comment)
+    {
+        var client = _db.Client;
+
+        using var session = await client.StartSessionAsync();
+
+        session.StartTransaction();
+
+        try
+        {
+            var db = client.GetDatabase(_db.DbName);
+
+            var ideasInTransaction = db.GetCollection<IdeaModel>(_db.IdeaCollectionName);
+            var idea = (await ideasInTransaction.FindAsync(i => i.Id == ideaId)).First();
+            idea.Comments.Add(new BasicCommentModel(comment));
+            await ideasInTransaction.ReplaceOneAsync(i => i.Id == ideaId, idea);
+
+            var usersInTransAction = db.GetCollection<UserModel>(_db.UserCollectionName);
+            var user = await _userData.GetUser(comment.Creator.Id);
+            user.CommentedIdeas.Add(new BasicCommentModel(comment));
+            await usersInTransAction.ReplaceOneAsync(i => i.Id == comment.Creator.Id, user);
+
+            await session.CommitTransactionAsync();
+
+            _cache.Remove(CacheName);
+        }
+        catch (Exception ex)
+        {
+            await session.AbortTransactionAsync();
+            throw;
+        }
+    }
+
     public async Task CreateIdea(IdeaModel idea)
     {
         var client = _db.Client;

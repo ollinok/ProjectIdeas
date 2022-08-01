@@ -6,5 +6,6 @@ public class CommentModel
     public string Id { get; set; }
     public string Text { get; set; }
     public DateTime DateCreated { get; set; } = DateTime.UtcNow;
-    public string Owner { get; set; }
+    public BasicUserModel Creator { get; set; }
+    public BasicIdeaModel Idea { get; set; }
 }

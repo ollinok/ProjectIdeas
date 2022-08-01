@@ -13,16 +13,21 @@ public class MongoCommentData : ICommentData
         _comments = db.CommentCollection;
     }
 
-    public async Task<List<CommentModel>> GetIdeaComments()
+    public async Task<List<CommentModel>> GetIdeaComments(string id)
     {
-        var output = _cache.Get<List<CommentModel>>(cacheName);
-        if (output == null)
-        {
-            var results = await _comments.FindAsync(x => true);
-            output = results.ToList();
+        //var output = _cache.Get<List<CommentModel>>(cacheName);
+        //if (output == null)
+        //{
+        //    var results = await _comments.FindAsync(x => true);
+        //    output = results.ToList();
 
-            _cache.Set(cacheName, output, TimeSpan.FromMinutes(1));
-        }
+        //    _cache.Set(cacheName, output, TimeSpan.FromMinutes(1));
+        //}
+
+        var output = new List<CommentModel>();
+        var results = await _comments.FindAsync(c => c.Idea.Id == id);
+        output = results.ToList();
+
         return output;
     }
 
